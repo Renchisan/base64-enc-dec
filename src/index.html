@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoding and Decoding</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <h2 class="logo">joms</h2>
+        <div class="about">
+            <a href="https://youtu.be/xvFZjo5PgG0">About Us</a>
+            <a href="https://streamable.com/lf027o">Members</a>
+            <a href="https://youtu.be/xvFZjo5PgG0">Source Code</a>
+        </div>
+    </nav>
+    <div class="hometitle">Base64 Encoding and Decoding</div>
+
+
+
+    <section class="section">
+        <!--container containing encoder and decoder containers-->
+        <div class="container">
+            <!--container child for ease when editing encoder and decoder in css-->
+            <div class="container-child">
+                <!--to enter string input for encoding-->
+                <textarea name="encodeString" id="encodeString" cols="30" rows="6"
+                    placeholder="Enter string to encode here..."></textarea>
+                <!--calling encodeBase64() function to encode input string-->
+                <button onclick="encodeBase64()">Encode</button>
+
+                <p>Output:</p>
+                <!--print encoded string-->
+                <textarea id="encodedOutput" cols="30" rows="3" style="margin-top: 0; border: none;"
+                    placeholder="The result will display here..." readonly></textarea>
+                <!--call copyEncodedOutput() when Copy is clicked-->
+                <span class="enc" onclick="copyEncodedOutput()">&#x2398; Copy</span>
+
+            </div>
+            <div class="container-child">
+                <!--to enter string input for decoding-->
+                <textarea name="decodeString" id="decodeString" cols="30" rows="6"
+                    placeholder="Enter string to decode here..."></textarea>
+                <!--calling decodeBase64() function to decode input string-->
+                <button onclick="decodeBase64()">Decode</button>
+
+                <p>Output:</p>
+                <!--print decoded string-->
+                <textarea id="decodedOutput" cols="30" rows="3" style="margin-top: 0; border: none;"
+                    placeholder="The result will display here..." readonly></textarea>
+                <!--call copyDecodedOutput() when Copy is clicked-->
+                <span class="dec" onclick="copyDecodedOutput()">&#x2398; Copy</span>
+            </div>
+        </div>
+        <div id="copiedPrompt">Successfully Copied!</div>
+        <div id="errorPrompt">The string you entered is NOT Base64, please check on spaces</div>
+        </div>
+    </section>
+    <script>
+        const base64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+        function toBinaryString(toEncode) {
+            // Convert the string to a UTF-8 encoded byte array
+            const utf8Encoder = new TextEncoder();
+            const byteArray = utf8Encoder.encode(toEncode);
+
+            // Convert each byte to an 8-bit binary string and concatenate them
+            const binaryString = Array.from(byteArray, byte => byte.toString(2).padStart(8, '0')).join('');
+            return binaryString;
+        }
+
+        function to6BitChunks(binaryString) {
+            // Split the binary string into 6-bit chunks
+            const chunks6bit = [];
+            for (let i = 0; i < binaryString.length; i += 6) {
+                chunks6bit.push(binaryString.slice(i, i + 6));
+            }
+
+            // Calculate padding amount and pad the last chunk if necessary
+            const lastChunk = chunks6bit[chunks6bit.length - 1];
+            const paddingAmount = 6 - lastChunk.length;
+            if (paddingAmount > 0) {
+                chunks6bit[chunks6bit.length - 1] = lastChunk + '0'.repeat(paddingAmount);
+            }
+            return chunks6bit;
+        }
+
+        function encodeBase64() {
+            var stringToEncode = document.getElementById("encodeString").value;
+            chunks6bit = to6BitChunks(toBinaryString(stringToEncode));
+
+            // Map each 6-bit chunk to its Base64 character
+            const encoded = chunks6bit.map(bits => base64Alphabet[parseInt(bits, 2)]).join('');
+
+            // Calculate and add padding characters ('=') if necessary
+            const padding = (3 - (stringToEncode.length % 3)) % 3;
+            const paddedEncodedString = encoded + '='.repeat(padding);
+
+            document.getElementById('encodedOutput').innerText = paddedEncodedString;
+        }
+
+        function copyEncodedOutput() {
+            const outputText = document.getElementById('encodedOutput').textContent;
+            navigator.clipboard.writeText(outputText)
+                .then(() => showCopiedPrompt())
+                .catch(err => console.error('Failed to copy: ', err));
+        }
+
+
+        // ### Base64 Decoding Functions
+        // Now, let's create the complementary decoding functions:
+        // 1. **Remove Padding Characters and Convert Base64 to Binary**:
+        // 2. **Convert Binary String to Bytes**:
+        // 3. **Convert Bytes to Original String**: 
+
+        function fromBase64ToBinary(encodedString) {
+            // Remove padding characters ('=') from the end of the encoded string
+            const unpaddedString = encodedString.replace(/=+$/, '');
+
+            // Map each Base64 character back to its 6-bit binary representation
+            const binaryString = Array.from(unpaddedString, char => {
+                const index = base64Alphabet.indexOf(char);
+                return index.toString(2).padStart(6, '0');
+            }).join('');
+
+            return binaryString;
+        }
+
+        function to8BitChunks(binaryString) {
+            // Split the binary string into 8-bit chunks
+            const chunks8bit = [];
+            for (let i = 0; i < binaryString.length; i += 8) {
+                const chunk = binaryString.slice(i, i + 8);
+                if (chunk.length === 8) {
+                    chunks8bit.push(chunk);
+                }
+            }
+            return chunks8bit;
+        }
+
+        function decodeBase64() {
+            const decodeString = document.getElementById("decodeString").value;
+            const isBase64 = value => /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$/.test(value);
+
+            if (isBase64(decodeString) == true) {
+                const binaryString = fromBase64ToBinary(decodeString);
+                const chunks8bit = to8BitChunks(binaryString);
+
+                // Convert each 8-bit chunk back to its byte value
+                const byteArray = chunks8bit.map(byte => parseInt(byte, 2));
+
+                // Convert the byte array back to a string
+                const utf8Decoder = new TextDecoder();
+                const decodedString = utf8Decoder.decode(new Uint8Array(byteArray));
+
+                document.getElementById('decodedOutput').innerText = decodedString;
+            } 
+            else{
+                showErrorPrompt();
+            }
+
+
+        }
+
+        function copyDecodedOutput() {
+            const outputText = document.getElementById('decodedOutput').textContent;
+            navigator.clipboard.writeText(outputText)
+                .then(() => showCopiedPrompt())
+                .catch(err => console.error('Failed to copy: ', err));
+
+        }
+
+        function showCopiedPrompt() {
+            const prompt = document.getElementById("copiedPrompt");
+            prompt.style.display = 'block';
+            setTimeout(() => {
+                prompt.style.display = 'none';
+            }, 3000);
+        }
+
+        function showErrorPrompt() {
+            const prompt = document.getElementById("errorPrompt");
+            prompt.style.display = 'block';
+            setTimeout(() => {
+                prompt.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
